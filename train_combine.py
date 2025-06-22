@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import numpy as np
 import matplotlib.pyplot as plt
 import shutil
@@ -176,7 +176,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations,check_poi
                 deform.optimizer.zero_grad()
                 deform.update_learning_rate(iteration)
     if j=="dynamic":
-        nodes[token_name]['gaussian'] = gaussians
+        nodes[token_name]['gaussians'] = gaussians
         
 def prepare_output_and_logger(args, model_path_token =None,source_path_token=None):
     if not args.model_path:
@@ -412,8 +412,9 @@ def get_objects_from_scene(nusc, scene_name="scene-0103"):
     i_split = [[0], [1], [2]]  # Mock-up split for demonstration
     return imgs, poses, render_poses, hwf, i_split, visible_objects, object_meta, render_objects, object_tokens
 
-def save_subsets_by_part_number(file_name, part_number, object_tokens):
+def save_subsets_by_part_number(file_name, part_number, object_tokens, scene_name=None):
     #for j in ["images.txt", "cameras.txt"]:
+    
     file_name_image = file_name + "images.txt" 
 
     with open(file_name_image, 'r') as file:
@@ -423,9 +424,9 @@ def save_subsets_by_part_number(file_name, part_number, object_tokens):
     
     with open(file_name_image, 'w') as file:
         file.write(new_content)
-    
+    print("Sorting file by timestamp")
     sort_file_by_timestamp(file_name_image, file_name_image)
-    
+    print("Sorted file by timestamp")
     with open(file_name_image, 'r', encoding='utf-8') as file:
         lines_image = [line for line in file if not line.strip().startswith('#')]
         total_lines_image = len(lines_image)
@@ -434,6 +435,8 @@ def save_subsets_by_part_number(file_name, part_number, object_tokens):
         lines_camera = [line for line in file if not line.strip().startswith('#')]
         total_lines_camera = len(lines_camera)
 
+    #print("Total lines in images.txt:", total_lines_image)
+    #print("Total lines in cameras.txt:", total_lines_camera)
     parts = file_name.split(os.sep)
     base_path_parts = parts[:-3]  
     rest_path_parts = parts[-3:-1]  
@@ -444,14 +447,21 @@ def save_subsets_by_part_number(file_name, part_number, object_tokens):
     import math
     lines_per_subset = math.ceil(total_lines_camera / part_number)
     
+    #print("Lines per subset:", lines_per_subset)
+    #print("Base path:", base_path)
+    #print("Rest path:", rest_path)
+    #print("Base copy:", base_copy)
+    #print("Part number:", part_number)
+
     for j in ["dynamic", "static"]:
           
         if j == "static":
+            print("If static HIT")  
             print("generate file")
             print(total_lines_camera)
             
             for i in range(0, total_lines_camera, lines_per_subset):
-                
+                print("Iteration over static objects")  
                 end_index = min(i + lines_per_subset, total_lines_camera)
                 subset_image = lines_image[2 * i : 2 * end_index]
                 subset_camera = lines_camera[i : end_index]
@@ -465,7 +475,7 @@ def save_subsets_by_part_number(file_name, part_number, object_tokens):
                 #     shutil.rmtree(subset_image_dir_name)
                 os.makedirs(subset_image_dir_name,exist_ok=True)
                 os.makedirs(subset_dir_name + "/sparse",exist_ok=True)
-                os.makedirs(subset_dir_name + "/sparse/0",exist_ok=True)
+                os.makedirs(subset_dir_name + "/sparse/origin",exist_ok=True)
                 subset_file_name = subset_dir_name + os.sep + rest_path + "/images.txt"
                 if os.path.exists(subset_file_name):
                     os.remove(subset_file_name)
@@ -478,8 +488,11 @@ def save_subsets_by_part_number(file_name, part_number, object_tokens):
                     os.remove(subset_file_name)
                 with open(subset_file_name, 'w', encoding='utf-8') as subset_file:
                     subset_file.writelines(subset_camera)
+                print("Static object out")  
         elif j == "dynamic":
+            #print("Else Dynamic HIT")  
             for k in object_tokens: 
+                #print("Dynamic iteration HIT")  
                 subset_dir_name = base_path + base_copy 
                 subset_dir_name = subset_dir_name + "_" + j + "_" + k + os.sep
                
@@ -489,10 +502,13 @@ def save_subsets_by_part_number(file_name, part_number, object_tokens):
                 print(subset_dir_name)
                 # try:
                 shutil.copytree(base_path + base_copy + os.sep, subset_dir_name)"""
-                if not os.path.exists(subset_dir_name + "sparse/0"):
-                    shutil.copytree("/data_dynamic/sparse/0", subset_dir_name + "/sparse/0")
+                if not os.path.exists(subset_dir_name + "sparse/origin"):
+                    print("Creating sparse/origin directory")
+                    shutil.copytree(base_path + base_copy + "/sparse/origin", subset_dir_name + "/sparse/origin")
+
+                print("Dynamic iteration OUT")  
             
-    mask_dynamic(base_path + base_copy, part_num = part_number)
+    mask_dynamic(base_path + base_copy, part_num = part_number, scene_name=scene_name)
 
 def build_graph(visible_objects, object_meta):
     nodes = {}
@@ -539,9 +555,9 @@ def replace_dynamic_image(txt_image,base_dir):
         new_lines = []
         skip_next = False
         for i in range(len(lines)):
-            # if skip_next:
-            #     skip_next = False
-            #     continue
+            # Skip empty or whitespace-only lines
+            if not lines[i].strip():
+                continue
             filename = lines[i].strip().split()[-1]
             if filename not in valid_filenames:
                 skip_next = True
@@ -557,7 +573,7 @@ def replace_dynamic_image(txt_image,base_dir):
         if "dynamic_" in subdir:
             part_dir = os.path.join(base_dir, subdir)
             images_dir = os.path.join(part_dir, 'images')
-            images_file = os.path.join(part_dir, 'sparse/0/images.txt')
+            images_file = os.path.join(part_dir, 'sparse/origin/images.txt')
             
             if os.path.exists(images_dir) and os.path.exists(images_file):
                 valid_filenames = get_image_filenames(images_dir)
@@ -569,8 +585,8 @@ def replace_dynamic_image(txt_image,base_dir):
     print("All files have been processed.")
 
 def handle_camera(part_num=16):
-    txt_camera = "./data_dynamic/sparse/0/cameras.txt"
-    txt_image = "./data_dynamic/sparse/0/images.txt"
+    txt_camera = "/mnt/data/tijaz/anotherDataset/v1.0-mini/extracted/fcbccedd61424f1b85dcbf8f897f9754/colmap/sparse/origin/cameras.txt"
+    txt_image = "/mnt/data/tijaz/anotherDataset/v1.0-mini/extracted/fcbccedd61424f1b85dcbf8f897f9754/colmap/sparse/origin/images.txt"
     # Open the file in read mode
     with open(txt_camera, 'r') as file:
         # Count the lines
@@ -618,26 +634,43 @@ if __name__ == "__main__":
     model_path_copy = args.model_path
     source_path_copy = args.source_path
 
-    nusc = NuScenes(version='v1.0-mini', dataroot='/Nuscenes/', verbose=True)
-    imgs, poses, render_poses, hwf, i_split, visible_objects, object_meta, render_objects, object_tokens = get_objects_from_scene(nusc)
+    nusc = NuScenes(version='v1.0-mini', dataroot='/mnt/data/tijaz/anotherDataset/v1.0-mini', verbose=True)
+    
+    # Print all available scene names for debugging
+    print("Available scene names:")
+    for scene in nusc.scene:
+        print(scene['name'])
+    # Select the first scene name (or change as needed)
+    selected_scene_name = nusc.scene[0]['name'] if len(nusc.scene) > 0 else None
+    # Always use scene-0103
+    selected_scene_name = "scene-0103"
+    print(f"Using scene: {selected_scene_name}")
+    imgs, poses, render_poses, hwf, i_split, visible_objects, object_meta, render_objects, object_tokens = get_objects_from_scene(nusc, scene_name=selected_scene_name)
     nodes = build_graph(visible_objects, object_meta)
-    save_subsets_by_part_number(args.source_path + "/sparse/0/", args.part_num, object_tokens)
+    print("Getting INTO save_subsets_by_part_number")
+    save_subsets_by_part_number(args.source_path + "colmap/sparse/origin/", args.part_num, object_tokens, scene_name=selected_scene_name)
+    print("Getting OUTOF  save_subsets_by_part_number")
     handle_camera(args.part_num)
-
+    print("Object tokens:", object_tokens)
+    print("Training Started.... ")
     f_name = "1"
     for j in ["static","dynamic"]:
-
-        source_path_state = source_path_copy + "_" + j
+    
+        source_path_state = os.path.join(source_path_copy, f"colmap_{j}")
+        print("source_path:", source_path_state)
         # source_path_state = source_path_copy 
         model_path_state = model_path_copy + "_" + j
+        
+        print("model_path:", model_path_state)
         # mask_dynamic(args.source_path)
         if j == "dynamic":
-            
+            print("Dynamic objects found:", object_tokens)
             for k in range(len(object_tokens)):
                 token_name = object_tokens[k]
                 source_path_token = source_path_state + "_" + token_name
 
                 model_path_token = model_path_state + "_" + token_name 
+                print("model_path_token:", model_path_token)
                 if not os.path.exists(source_path_token):
                     continue
                 print("source_path:", source_path_token) 
@@ -676,11 +709,11 @@ if __name__ == "__main__":
                     #shutil.copytree(args.source_path + "_static", source_path_global)
                     shutil.copytree(args.source_path, source_path_global)
                     if i > 10:
-                        file_path = source_path_state + "_part" + f_name[:-3] +"/sparse/0/images.txt"
+                        file_path = source_path_state + "_part" + f_name[:-3] +"/sparse/origin/images.txt"
                     else:
-                        file_path = source_path_state + "_part" + f_name[:-2] +"/sparse/0/images.txt"
+                        file_path = source_path_state + "_part" + f_name[:-2] +"/sparse/origin/images.txt"
 
-                    with open(source_path_token+"/sparse/0/images.txt", 'r') as file1:
+                    with open(source_path_token+"/sparse/origin/images.txt", 'r') as file1:
                         content1 = file1.read()
                     
                     with open(file_path, 'r') as file2:
@@ -688,7 +721,7 @@ if __name__ == "__main__":
                     
                     combined_content = content1 + '\n' + content2
                     
-                    with open(source_path_global+"/sparse/0/images.txt", 'w') as file_combined:
+                    with open(source_path_global+"/sparse/origin/images.txt", 'w') as file_combined:
                         file_combined.write(combined_content)
                     torch.autograd.set_detect_anomaly(args.detect_anomaly)
                     #if i != 2:
