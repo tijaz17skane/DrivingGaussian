@@ -1,0 +1,15 @@
+{
+  "name": "Python: Attach to train_combine.py in Container",
+  "type": "python",
+  "request": "attach",
+  "connect": {
+    "host": "localhost",
+    "port": 5678
+  },
+  "pathMappings": [
+    {
+      "localRoot": "/mnt/data/tijaz/DrivingGaussian",  // path on your host
+      "remoteRoot": "/app"  // path inside the container where your code is
+    }
+  ]
+}
