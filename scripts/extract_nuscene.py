@@ -103,11 +103,11 @@ def apply_4x4(RT, xyz):
     return xyz2.T[...,0:3]
 import argparse    
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataroot', type=str, default='/Nuscenes/', help='path to Nuscenes dataset')
-parser.add_argument('--out_dir', type=str, default='/sparse', help='path to save extracted data')
+parser.add_argument('--dataroot', type=str, default='/mnt/data/tijaz/anotherDataset/v1.0-mini', help='path to Nuscenes dataset')
+parser.add_argument('--out_dir', type=str, default='/mnt/data/tijaz/anotherDataset/v1.0-mini/extracted', help='path to save extracted data')
 args = parser.parse_args()
 target_moving_object = ['vehicle.moving','cycle.with_rider','pedestrian.moving']#
-nusc =NuScenes(version='v1.0-trainval', dataroot=args.dataroot, verbose=True)
+nusc =NuScenes(version='v1.0-mini', dataroot=args.dataroot, verbose=True)
 import cv2
 from PIL import Image
 from pathlib import Path

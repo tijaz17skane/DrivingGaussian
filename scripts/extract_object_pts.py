@@ -15,7 +15,7 @@ import torch
 if __name__ == "__main__":
     import argparse    
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root_path", default="")
+    parser.add_argument("--root_path", default="/mnt/data/tijaz/anotherDataset/v1.0-mini/extracted/fcbccedd61424f1b85dcbf8f897f9754")
     parser.add_argument("--meta_file", default="transform.json")
 
     args = parser.parse_args()
@@ -36,9 +36,9 @@ if __name__ == "__main__":
             points = np.array(pcd_data.points)
             
             bbox3d = []
-            anns = lidar_frame["objects"]
+            anns = lidar_frame.get("objects", lidar_frame.get("anns", []))
             for ann in anns:
-                if ann["is_moving"]:
+                if ann.get("type") == "vehicle.moving":
                     if ann["instance_token"] not in objs_points:
                         objs_points[ann["instance_token"]] = []
                         objs_colors[ann["instance_token"]] = []

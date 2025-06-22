@@ -66,7 +66,7 @@ import torch
 if __name__ == "__main__":
     import argparse    
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root_path", default="/Nuscenes/fcbccedd61424f1b85dcbf8f897f9754")
+    parser.add_argument("--root_path", default="/mnt/data/tijaz/anotherDataset/v1.0-mini/extracted/fcbccedd61424f1b85dcbf8f897f9754")
     parser.add_argument("--meta_file", default="transform.json")
 
     args = parser.parse_args()

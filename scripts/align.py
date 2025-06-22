@@ -41,7 +41,7 @@ def get_R_T(quat, trans):
 if __name__ == "__main__":
     import argparse    
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_path", default="/Nuscenes/fcbccedd61424f1b85dcbf8f897f9754/")
+    parser.add_argument("--input_path", default="/mnt/data/tijaz/anotherDataset/v1.0-mini/extracted/fcbccedd61424f1b85dcbf8f897f9754")
     parser.add_argument("--json_file", default="transform.json")
     args = parser.parse_args()
 
@@ -157,3 +157,5 @@ if __name__ == "__main__":
         for image_index in images_content:
             f.write(str(image_index)+" ")
             f.write(' '.join(images_content[image_index]) + '\n\n')
+
+
