@@ -15,9 +15,10 @@ import shutil
 import os
 import sys
 import torch
+from concurrent.futures import ProcessPoolExecutor
 
 track_class = {'car', 'truck', 'trailer', 'bus', 'bicycle', 'motorcycle', 'pedestrian'}
-nusc = NuScenes(version='v1.0-trainval', dataroot='/nuScenes/', verbose=False)
+nusc = NuScenes(version='v1.0-mini', dataroot='/mnt/data/tijaz/anotherDataset/v1.0-mini', verbose=False)
 
 def get_instance_dict():
     instance_dict = {}
@@ -182,12 +183,13 @@ def write_mask(part_num, data_path, name, sample_data_token, camera_name, number
                 image_data.extend([0 if pixel == 0 else 255 for pixel in row])
             image = Image.new("1", (len(all_mask[0]), len(all_mask)))
             image.putdata(image_data)
-            
+            print("Writing dynamic mask for instance: ", ann_rec['instance_token'])
 
             picture = Image.fromarray(np.uint8(all_mask), mode="1")
             semseg_mask_tensor = torch.from_numpy(semseg_mask)
             
             dynamic_sparse_path = data_path + "_dynamic" + "_" + ann_rec['instance_token'] + "/sparse/"
+            print("Dynamic sparse path: ", dynamic_sparse_path)
             if not os.path.exists(dynamic_sparse_path):
 
                 if os.path.exists(data_path + "/sparse/"):
@@ -195,11 +197,11 @@ def write_mask(part_num, data_path, name, sample_data_token, camera_name, number
             
             datapath = data_path + "_dynamic" + "_" + ann_rec['instance_token'] + "/images/"
             mkdir(datapath)
-            
+            print("Dynamic image path: ", datapath)
             datapath_mask = datapath + "mask_" + ann_rec['filename'].split('/')[-1].rsplit('.', 1)[0] + ".png"
             datapath_full = datapath + ann_rec['filename'].split('/')[-1].rsplit('.', 1)[0] + ".png"
             mask_path = datapath + ann_rec['filename'].split('/')[-1].rsplit('.', 1)[0] + ".pt"
-
+            print("Mask path: ", mask_path)
             torch.save(semseg_mask_tensor, mask_path)
             picture_dynamic.save(datapath_mask, "PNG")
             picture_copy.save(datapath_full, "PNG")
@@ -214,8 +216,19 @@ def write_mask(part_num, data_path, name, sample_data_token, camera_name, number
     for i in range(1,part_num+1):
         datapath = data_path + "_static_part" + str(i) + "/images/"
         mkdir(datapath)
-        datapath = datapath + ann_rec['filename'].split('/')[-1].rsplit('.', 1)[0]  + ".png"
-        picture_static.save(datapath, "PNG")          
+        image_basename = ann_rec['filename'].split('/')[-1].rsplit('.', 1)[0]
+        datapath_img = datapath + image_basename + ".png"
+        datapath_mask = datapath + "mask_" + image_basename + ".png"
+        mask_path = datapath + image_basename + ".pt"
+        picture_static.save(datapath_img, "PNG")
+        # Create a full mask (all ones) for static
+        static_mask = np.ones((height, width), dtype='int32')
+        static_mask_tensor = torch.from_numpy(static_mask)
+        # Save mask as .pt
+        torch.save(static_mask_tensor, mask_path)
+        # Optionally, save mask as PNG for visualization
+        mask_img = Image.fromarray((static_mask * 255).astype(np.uint8))
+        mask_img.save(datapath_mask, "PNG")
                 
 def get_all_tokens(scene_name):
     scene_record = next(scene for scene in nusc.scene if scene['name'] == scene_name)
@@ -234,7 +247,14 @@ def get_all_tokens(scene_name):
     return frame_token_list
 
 def mask_dynamic(data_path, part_num,scene_name=None):
-    scene_name = '' # scene token
+    print("Start writing masks")
+    print("Part number: ", part_num)
+    print("Data path: ", data_path)
+    print("Scene name: ", scene_name)
     frame_token_list = get_all_tokens(scene_name)
-    for i in frame_token_list:  
-        write_mask(part_num, data_path, 0, i, 0, 0)
+    with ProcessPoolExecutor(max_workers=30) as executor:
+        futures = []
+        for i in frame_token_list:
+            futures.append(executor.submit(write_mask, part_num, data_path, 0, i, 0, 0))
+        for future in futures:
+            future.result()  # Wait for all to finish
