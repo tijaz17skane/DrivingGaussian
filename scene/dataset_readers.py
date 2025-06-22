@@ -103,7 +103,8 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
     for idx, key in enumerate(cam_extrinsics):
 
         extr = cam_extrinsics[key]
-        intr = cam_intrinsics[extr.camera_id]
+        #intr = cam_intrinsics[extr.camera_id]
+        intr = cam_intrinsics[next(iter(cam_intrinsics))]
         height = intr.height
         width = intr.width
         uid = intr.id
@@ -124,13 +125,22 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
 
         image_path = os.path.join(images_folder, os.path.basename(extr.name))
         image_name = os.path.basename(image_path).split(".")[0]
+        image_name = "n008-2018-08-01-15-16-36-0400__" + image_name
+        image_path = os.path.join(images_folder, image_name)
 
         if image_path[-4:] == ".jpg":
             image_path = image_path[:-4] + ".png"
+        else:
+            image_path = image_path + ".png"
+
         if not os.path.exists(image_path):
             continue
         image = Image.open(image_path)
-        fid = idx / (num_frames - 1)
+        #fid = idx / (num_frames - 1)
+        if num_frames == 1:
+            fid = idx/num_frames
+        else:
+            fid = idx / (num_frames - 1)
         mask_path = image_path[:-3] + "pt"
         if os.path.exists(mask_path):
             mask_tensor = torch.load(mask_path)
@@ -178,15 +188,15 @@ def storePly(path, xyz, rgb):
 
 def readColmapSceneInfo(path, images, eval, llffhold=8):
     try:
-        cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.txt")
-        cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.txt")
+        cameras_extrinsic_file = os.path.join(path, "sparse/origin", "images.txt")
+        cameras_intrinsic_file = os.path.join(path, "sparse/origin", "cameras.txt")
         cam_extrinsics = read_extrinsics_text(cameras_extrinsic_file)
         cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
     except:
         print(Exception)
-        print("exception:no sparse/0")
-        cameras_extrinsic_file = "/sparse/0/images.txt"
-        cameras_intrinsic_file = "/sparse/0/cameras.txt"
+        print("exception:no sparse/origin")
+        cameras_extrinsic_file = "/sparse/origin/images.txt"
+        cameras_intrinsic_file = "/sparse/origin/cameras.txt"
         cam_extrinsics = read_extrinsics_text(cameras_extrinsic_file)
         cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
     reading_dir = "images" if images == None else images
@@ -194,7 +204,7 @@ def readColmapSceneInfo(path, images, eval, llffhold=8):
     # cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics,
     #                                     images_folder=os.path.join(path, reading_dir))
     if "static" in path:
-        reading_dir_new = "/images_png" # images path
+        reading_dir_new = "images" # images path
         cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics,
                                         images_folder=os.path.join(path, reading_dir_new))
     else:
@@ -212,15 +222,15 @@ def readColmapSceneInfo(path, images, eval, llffhold=8):
         test_cam_infos = []
 
     nerf_normalization = getNerfppNorm(train_cam_infos)
-    ply_path = os.path.join(path, "sparse/0/points3D.ply")
+    ply_path = os.path.join(path, "sparse/origin/points3D.ply")
     if "dynamic" in path:
         ply_path = os.path.join("/dynamic_extract/", token )
     elif "static" in path:
-        ply_path = "/sparse/0/points3D.ply"
+        ply_path = "/sparse/origin/points3D.ply"
     print("ply loading:", ply_path)
-    bin_path = os.path.join(path, "sparse/0/points3D.bin")
-    txt_path = os.path.join(path, "sparse/0/points3D.txt")
-    pcd_path = os.path.join(path, "sparse/0/lidar.pcd")
+    bin_path = os.path.join(path, "sparse/origin/points3D.bin")
+    txt_path = os.path.join(path, "sparse/origin/points3D.txt")
+    pcd_path = os.path.join(path, "sparse/origin/lidar.pcd")
     random = False
     if os.path.exists(pcd_path):
         pcd_pcd = o3d.io.read_point_cloud(pcd_path)
