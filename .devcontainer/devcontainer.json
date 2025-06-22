@@ -1,0 +1,20 @@
+{
+  "name": "DrivingGaussianDev",
+  "context": "/mnt/data/tijaz/tallha_ijaz_gaussian_splatting-ijaz-dev-patch-20542/tallha_ijaz_gaussian_splatting-ijaz-dev-patch-20542/",  // path to the Dockerfile directory, adjust if needed
+  "dockerFile": "docker/Dockerfile",
+  "workspaceFolder": "/app",
+  "runArgs": [
+    "--gpus", "all"
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "/app/.venv_lod-3dgs/bin/activate
+"
+  },
+  "remoteUser": "root",
+  "mounts": [
+    "source=${localWorkspaceFolder}/../:/mnt/data/tijaz:rw"
+  ],
+  "extensions": [
+    "ms-python.python"
+  ]
+}
