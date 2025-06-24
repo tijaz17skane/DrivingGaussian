@@ -170,20 +170,22 @@ def fetchPly(path,random=False):
     return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
 def storePly(path, xyz, rgb):
-    # Define the dtype for the structured array
-    dtype = [('x', 'f4'), ('y', 'f4'), ('z', 'f4'),
-             ('nx', 'f4'), ('ny', 'f4'), ('nz', 'f4'),
-             ('r', 'u1'), ('g', 'u1'), ('b', 'u1')]
+    # If points3D.ply does not exist at the path, create it
+    if not os.path.exists(path):
+        # Define the dtype for the structured array
+        dtype = [('x', 'f4'), ('y', 'f4'), ('z', 'f4'),
+                 ('nx', 'f4'), ('ny', 'f4'), ('nz', 'f4'),
+                 ('r', 'u1'), ('g', 'u1'), ('b', 'u1')]
 
-    normals = np.zeros_like(xyz)
+        normals = np.zeros_like(xyz)
 
-    elements = np.empty(xyz.shape[0], dtype=dtype)
-    attributes = np.concatenate((xyz, normals, rgb), axis=1)
-    elements[:] = list(map(tuple, attributes))
+        elements = np.empty(xyz.shape[0], dtype=dtype)
+        attributes = np.concatenate((xyz, normals, rgb), axis=1)
+        elements[:] = list(map(tuple, attributes))
 
-    vertex_element = PlyElement.describe(elements, 'vertex')
-    ply_data = PlyData([vertex_element])
-    ply_data.write(path)
+        vertex_element = PlyElement.describe(elements, 'vertex')
+        ply_data = PlyData([vertex_element])
+        ply_data.write(path)
 
 
 def readColmapSceneInfo(path, images, eval, llffhold=8):
@@ -226,7 +228,7 @@ def readColmapSceneInfo(path, images, eval, llffhold=8):
     if "dynamic" in path:
         ply_path = os.path.join("/dynamic_extract/", token )
     elif "static" in path:
-        ply_path = "/sparse/origin/points3D.ply"
+        ply_path = path + "/sparse/origin/points3D.ply"
     print("ply loading:", ply_path)
     bin_path = os.path.join(path, "sparse/origin/points3D.bin")
     txt_path = os.path.join(path, "sparse/origin/points3D.txt")
@@ -239,10 +241,15 @@ def readColmapSceneInfo(path, images, eval, llffhold=8):
     if not os.path.exists(ply_path):
         print("Converting point3d.bin to .ply, will happen only the first time you open the scene.")
         try:
+            print("Try reading binary points3D.bin")
             xyz, rgb, _ = read_points3D_binary(bin_path)
         except:
+            print("Except reading binary points3D.bin")
             xyz, rgb, _ = read_points3D_text(txt_path)
-        storePly(ply_path, xyz, rgb)
+        
+        print("Converted points3D.bin")
+
+        storePly(ply_path, xyz, rgb) #changed path from ply_path to path + ply_path
     try:
         pcd = fetchPly(ply_path,random)
         print("Yes")

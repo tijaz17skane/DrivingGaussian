@@ -85,28 +85,23 @@ def read_points3D_text(path):
         void Reconstruction::ReadPoints3DText(const std::string& path)
         void Reconstruction::WritePoints3DText(const std::string& path)
     """
-    xyzs = None
-    rgbs = None
-    errors = None
+    xyzs = []
+    rgbs = []
+    errors = []
+    count = 0
     with open(path, "r") as fid:
-        while True:
-            line = fid.readline()
-            if not line:
-                break
+        for line in fid:
             line = line.strip()
             if len(line) > 0 and line[0] != "#":
                 elems = line.split()
-                xyz = np.array(tuple(map(float, elems[1:4])))
-                rgb = np.array(tuple(map(int, elems[4:7])))
-                error = np.array(float(elems[7]))
-                if xyzs is None:
-                    xyzs = xyz[None, ...]
-                    rgbs = rgb[None, ...]
-                    errors = error[None, ...]
-                else:
-                    xyzs = np.append(xyzs, xyz[None, ...], axis=0)
-                    rgbs = np.append(rgbs, rgb[None, ...], axis=0)
-                    errors = np.append(errors, error[None, ...], axis=0)
+                xyzs.append([float(elems[1]), float(elems[2]), float(elems[3])])
+                rgbs.append([int(elems[4]), int(elems[5]), int(elems[6])])
+                errors.append(float(elems[7]))
+                count += 1
+                print(f"appended line {count}")
+    xyzs = np.array(xyzs)
+    rgbs = np.array(rgbs)
+    #errors = np.array(errors)
     return xyzs, rgbs, errors
 
 def read_points3D_binary(path_to_model_file):

@@ -252,7 +252,7 @@ def mask_dynamic(data_path, part_num,scene_name=None):
     print("Data path: ", data_path)
     print("Scene name: ", scene_name)
     frame_token_list = get_all_tokens(scene_name)
-    with ProcessPoolExecutor(max_workers=50) as executor:
+    with ProcessPoolExecutor(max_workers=30) as executor:
         futures = []
         for i in frame_token_list:
             futures.append(executor.submit(write_mask, part_num, data_path, 0, i, 0, 0))

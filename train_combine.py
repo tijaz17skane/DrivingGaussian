@@ -453,7 +453,7 @@ def save_subsets_by_part_number(file_name, part_number, object_tokens, scene_nam
     #print("Base copy:", base_copy)
     #print("Part number:", part_number)
 
-    for j in ["dynamic", "static"]:
+    for j in ["static", "dynamic"]:
           
         if j == "static":
             print("If static HIT")  
@@ -476,6 +476,15 @@ def save_subsets_by_part_number(file_name, part_number, object_tokens, scene_nam
                 os.makedirs(subset_image_dir_name,exist_ok=True)
                 os.makedirs(subset_dir_name + "/sparse",exist_ok=True)
                 os.makedirs(subset_dir_name + "/sparse/origin",exist_ok=True)
+                # Copy points3D.txt and related files from original COLMAP output
+                for fname in ["points3D.txt", "points3D.ply", "points3D.bin"]:
+                    src_points_file = os.path.join(file_name, fname)
+                    dst_points_file = os.path.join(subset_dir_name, "sparse/origin", fname)
+                    if os.path.exists(src_points_file):
+                        shutil.copy2(src_points_file, dst_points_file)
+                        print(f"Copied {src_points_file} to {dst_points_file}")
+                    else:
+                        print(f"WARNING: {src_points_file} does not exist and was not copied.")
                 subset_file_name = subset_dir_name + os.sep + rest_path + "/images.txt"
                 if os.path.exists(subset_file_name):
                     os.remove(subset_file_name)
@@ -648,7 +657,7 @@ if __name__ == "__main__":
     imgs, poses, render_poses, hwf, i_split, visible_objects, object_meta, render_objects, object_tokens = get_objects_from_scene(nusc, scene_name=selected_scene_name)
     nodes = build_graph(visible_objects, object_meta)
     print("Getting INTO save_subsets_by_part_number")
-    save_subsets_by_part_number(args.source_path + "colmap/sparse/origin/", args.part_num, object_tokens, scene_name=selected_scene_name)
+    #save_subsets_by_part_number(args.source_path + "colmap/sparse/origin/", args.part_num, object_tokens, scene_name=selected_scene_name)
     print("Getting OUTOF  save_subsets_by_part_number")
     handle_camera(args.part_num)
     print("Object tokens:", object_tokens)
