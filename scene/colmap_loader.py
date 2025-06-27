@@ -12,6 +12,7 @@
 import numpy as np
 import collections
 import struct
+from tqdm import tqdm
 
 CameraModel = collections.namedtuple(
     "CameraModel", ["model_id", "model_name", "num_params"])
@@ -90,7 +91,8 @@ def read_points3D_text(path):
     errors = []
     count = 0
     with open(path, "r") as fid:
-        for line in fid:
+        
+        for line in tqdm(fid, desc="ply conversion progress", unit="lines"):
             line = line.strip()
             if len(line) > 0 and line[0] != "#":
                 elems = line.split()
@@ -98,7 +100,7 @@ def read_points3D_text(path):
                 rgbs.append([int(elems[4]), int(elems[5]), int(elems[6])])
                 errors.append(float(elems[7]))
                 count += 1
-                print(f"appended line {count}")
+                
     xyzs = np.array(xyzs)
     rgbs = np.array(rgbs)
     #errors = np.array(errors)

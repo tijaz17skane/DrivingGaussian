@@ -1,0 +1,1 @@
+Namespace(data_device=device(type='cuda', index=0), eval=False, images='images', is_blender=False, load2gpu_on_the_fly=False, model_path='/mnt/data/tijaz/DrivingGaussian/Models/mini10Model_static_part1', resolution=-1, sh_degree=3, source_path='/mnt/data/tijaz/anotherDataset/v1.0-mini/extracted/fcbccedd61424f1b85dcbf8f897f9754/colmap_static_part1', white_background=False)

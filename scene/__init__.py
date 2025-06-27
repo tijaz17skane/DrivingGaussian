@@ -153,7 +153,7 @@ class Scene:
         elif state and token_name:
             self.gaussians.create_from_pcd(args, scene_info.point_cloud, self.cameras_extent)
         else:
-            self.gaussians.load_ply(os.path.join(args.source_path,"sparse/0/points3D.ply"))
+            self.gaussians.load_ply(os.path.join(source_path_token,"sparse/origin/points3D.ply"))
 
         self.point_cloud = scene_info.point_cloud
         
